@@ -16,8 +16,8 @@ func min(a, b int) int {
 // Function to solve TSP with dynamic programming and bitmasking
 func tsp(mask int, pos int, dist [][]int, dp [][]int, path [][]int, n int) int {
 	if mask == (1<<n)-1 {
-		// If all cities have been visited, return cost to go back to starting city
-		return dist[pos][0]
+		// If all cities have been visited, return 0 since we do not need to return to the starting city
+		return 0
 	}
 
 	// If this subproblem has been solved before, return the stored result
@@ -50,18 +50,33 @@ func tsp(mask int, pos int, dist [][]int, dp [][]int, path [][]int, n int) int {
 }
 
 // Function to print the path in the TSP tour
-func printPath(path [][]int, n int) {
-	mask := 1 // Start with city A visited (bitmask 00000001)
-	pos := 0  // Start at city A (index 0)
+func printPath(startCity int, path [][]int, n int) {
+	mask := 1 << startCity // Start with the starting city visited
+	pos := startCity
+	visited := make(map[int]bool) // Track visited cities
 
-	fmt.Print("Tour: A") // Start with city A
+	// Print the starting city
+	fmt.Printf("Tour starting from %c: %c", 'A'+startCity, 'A'+startCity)
+	visited[startCity] = true
+
+	// Iterate through the path
 	for i := 0; i < n-1; i++ {
 		next := path[mask][pos]
-		fmt.Printf(" -> %c", 'A'+next) // Print the next city in alphabetical order
-		mask |= (1 << next)            // Mark the next city as visited
-		pos = next                     // Move to the next city
+
+		// Check if next city is valid
+		if next == -1 {
+			fmt.Println("Error: Path contains invalid city.")
+			return
+		}
+
+		fmt.Printf(" -> %c", 'A'+next)
+		mask |= (1 << next) // Update the bitmask
+		pos = next          // Move to the next city
+		visited[next] = true
 	}
-	fmt.Println(" -> A") // Return to the starting city A
+
+	// Print the final city (end of the path)
+	fmt.Println()
 }
 
 func main() {
@@ -79,24 +94,26 @@ func main() {
 
 	n := len(dist)
 
-	// Initialize memoization and path tables
-	dp := make([][]int, 1<<n)
-	path := make([][]int, 1<<n)
-	for i := range dp {
-		dp[i] = make([]int, n)
-		path[i] = make([]int, n)
-		for j := range dp[i] {
-			dp[i][j] = -1
-			path[i][j] = -1
+	// Iterate through each city as the starting city
+	for startCity := 0; startCity < n; startCity++ {
+		// Initialize memoization and path tables
+		dp := make([][]int, 1<<n)
+		path := make([][]int, 1<<n)
+		for i := range dp {
+			dp[i] = make([]int, n)
+			path[i] = make([]int, n)
+			for j := range dp[i] {
+				dp[i][j] = -1
+				path[i][j] = -1
+			}
 		}
+
+		// Solve TSP starting from the current city with only that city visited
+		minCost := tsp(1<<startCity, startCity, dist, dp, path, n)
+
+		// Print the minimum cost and path for the current starting city
+		fmt.Printf("Minimum cost for tour starting from %c: %d\n", 'A'+startCity, minCost)
+		printPath(startCity, path, n)
+		fmt.Println()
 	}
-
-	// Solve TSP starting from city 0 (A) with no other cities visited (mask = 00000001)
-	minCost := tsp(1, 0, dist, dp, path, n)
-
-	// Print the minimum cost
-	fmt.Printf("Minimum cost: %d\n", minCost)
-
-	// Print the path
-	printPath(path, n)
 }
