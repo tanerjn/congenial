@@ -14,18 +14,23 @@ type Edge struct {
 // A struct to represent the graph
 type Graph struct {
 	adjacencyList map[int][]Edge
+	nodes         map[int]bool
 }
 
 // Initialize a new graph
 func NewGraph() *Graph {
-	return &Graph{adjacencyList: make(map[int][]Edge)}
+	return &Graph{
+		adjacencyList: make(map[int][]Edge),
+		nodes:         make(map[int]bool),
+	}
 }
 
 // Add an edge to the graph
 func (g *Graph) AddEdge(from, to, weight int) {
 	g.adjacencyList[from] = append(g.adjacencyList[from], Edge{to, weight})
 	g.adjacencyList[to] = append(g.adjacencyList[to], Edge{from, weight}) // For undirected graph
-
+	g.nodes[from] = true
+	g.nodes[to] = true
 }
 
 // A priority queue implementation (Min-Heap) to track the node with the shortest known distance
@@ -85,6 +90,26 @@ func Dijkstra(g *Graph, start int) map[int]int {
 	return distances
 }
 
+// Function to print a text-based dynamic visualization of the graph
+func (g *Graph) PrintGraph() {
+	fmt.Println("Graph Visualization:")
+
+	// Collect all edges in the form of string lines
+	lines := []string{}
+	for from, edges := range g.adjacencyList {
+		for _, edge := range edges {
+			if from < edge.to { // Prevent duplicating edges (since it's undirected)
+				lines = append(lines, fmt.Sprintf("Node %d --(%d)-- Node %d", from, edge.weight, edge.to))
+			}
+		}
+	}
+
+	// Print the edges
+	for _, line := range lines {
+		fmt.Println(line)
+	}
+}
+
 func main() {
 	// Create a new graph
 	graph := NewGraph()
@@ -95,15 +120,24 @@ func main() {
 	graph.AddEdge(3, 2, 2)
 	graph.AddEdge(3, 4, 5)
 	graph.AddEdge(2, 4, 1)
-	graph.AddEdge(4, 1, 2)
+	graph.AddEdge(4, 1, 4)
+	graph.AddEdge(5, 3, 2)
 
-	// Run Dijkstra's algorithm from node 1
-	startNode := 1
-	shortestDistances := Dijkstra(graph, startNode)
+	// Dynamically print the graph
+	graph.PrintGraph()
 
-	// Print the shortest distances from the start node
-	fmt.Printf("Shortest distances from node %d:\n", startNode)
-	for node, distance := range shortestDistances {
-		fmt.Printf("Node %d: %d\n", node, distance)
+	// Run Dijkstra's algorithm for each node in the graph
+	for startNode := range graph.nodes {
+		shortestDistances := Dijkstra(graph, startNode)
+
+		// Print the shortest distances from the current start node
+		fmt.Printf("\nShortest distances from node %d:\n", startNode)
+		for node, distance := range shortestDistances {
+			if distance == math.MaxInt64 {
+				fmt.Printf("Node %d: unreachable\n", node)
+			} else {
+				fmt.Printf("Node %d: %d\n", node, distance)
+			}
+		}
 	}
 }
